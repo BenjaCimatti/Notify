@@ -3,6 +3,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:notify/notification_badge.dart';
+import 'package:notify/push_notification.dart';
+import 'package:overlay_support/overlay_support.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -15,6 +17,8 @@ class _HomePageState extends State {
 
   late final FirebaseMessaging _messaging;
   late int _totalNotifications;
+  PushNotification? _notificationInfo;
+  
 
   @override
   void initState() {
@@ -45,7 +49,28 @@ class _HomePageState extends State {
           const SizedBox(height: 16.0),
           NotificationBadge(totalNotifications: _totalNotifications),
           const SizedBox(height: 16.0),
-          // TODO: add the notification text here
+          _notificationInfo != null
+            ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'TITLE: ${_notificationInfo!.title}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.0,
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  'BODY: ${_notificationInfo!.body}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.0,
+                  ),
+                ),
+              ],
+            )
+              : Container(),
         ],
       ),
     );
@@ -59,20 +84,45 @@ class _HomePageState extends State {
     _messaging = FirebaseMessaging.instance;
 
     // 3. On iOS, this helps to take the user permissions
-    // NotificationSettings settings = await _messaging.requestPermission(
-    //   alert: true,
-    //   badge: true,
-    //   provisional: false,
-    //   sound: true,
-    // );
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      provisional: false,
+      sound: true,
+    );
 
-    // if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    //   // ignore: avoid_print
-    //   print('User granted permission');
-    //   // TODO: handle the received notifications
-    // } else {
-    //   // ignore: avoid_print
-    //   print('User declined or has not accepted permission');
-    // }
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      // ignore: avoid_print
+      print('User granted permission');
+
+      // For handling the received notifications
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        // Parse the message received
+        PushNotification notification = PushNotification(
+          title: message.notification?.title,
+          body: message.notification?.body,
+        );
+
+        setState(() {
+          _notificationInfo = notification;
+          _totalNotifications++;
+        });
+
+        if (_notificationInfo != null) {
+          // For displaying the notification as an overlay
+          showSimpleNotification(
+            Text(_notificationInfo!.title!),
+            leading: NotificationBadge(totalNotifications: _totalNotifications),
+            subtitle: Text(_notificationInfo!.body!),
+            background: Colors.cyan.shade700,
+            duration: const Duration(seconds: 2),
+          );
+        }
+      });
+
+    } else {
+      // ignore: avoid_print
+      print('User declined or has not accepted permission');
+    }
   }
 }
