@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:notify/model/colors.dart';
 import 'package:notify/model/push_notification.dart';
 import 'package:overlay_support/overlay_support.dart';
 
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Notify',
         theme: ThemeData(
-          primarySwatch: Colors.green,
+          primarySwatch: Colors.blueGrey,
         ),
         debugShowCheckedModeBanner: false,
         home: HomePage(),
@@ -39,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   late int _totalNotifications;
   PushNotification? _notificationInfo;
   String _token = 'token';
+  bool copied = false;
 
   void registerNotification() async {
     await Firebase.initializeApp();
@@ -86,7 +88,7 @@ class _HomePageState extends State<HomePage> {
             Text(_notificationInfo!.title!),
             leading: NotificationBadge(totalNotifications: _totalNotifications),
             subtitle: Text(_notificationInfo!.body!),
-            background: Colors.cyan.shade700,
+            background: kPurple,
             duration: Duration(seconds: 2),
           );
         }
@@ -143,20 +145,34 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Notify'), systemOverlayStyle: SystemUiOverlayStyle.light,
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: kPurple,
+    ));
+
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [kBGDarkPurple,kBGLightPurple]
+        )
       ),
-      body: Center(
-        child: Column(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               'Firebase Push Notifications',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontSize: 20,
+                fontFamily: 'Poppins'
               ),
             ),
             SizedBox(height: 16.0),
@@ -167,24 +183,62 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TITLE: ${_notificationInfo!.dataTitle ?? _notificationInfo!.title}',
+                        'Title: ${_notificationInfo!.dataTitle ?? _notificationInfo!.title}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16.0,
+                          fontFamily: 'Poppins'
                         ),
                       ),
                       SizedBox(height: 8.0),
                       Text(
-                        'BODY: ${_notificationInfo!.dataBody ?? _notificationInfo!.body}',
+                        'Body: ${_notificationInfo!.dataBody ?? _notificationInfo!.body}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16.0,
+                          fontFamily: 'Poppins'
                         ),
                       ),
                     ],
                   )
                 : Container(),
-                Text(_token)
+                ElevatedButton(
+                  onPressed: copied == false ? () {
+                    _token != 'token' ?
+                    Clipboard.setData(ClipboardData(text: _token))
+                    : print('');
+
+                    setState(() {
+                      copied = true;
+                    });
+                  } : null, 
+                  child: Text(
+                    copied ? 'Token Successfully Copied!' : 'Copy Device Token',
+                    style: TextStyle(
+                      color: copied ? kPurpleAccent : Colors.white.withOpacity(0.65),
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 20,
+                    ),
+                  ),
+                  style: ButtonStyle(
+                    elevation: MaterialStateProperty.all<double>(0),
+                    padding:
+                        MaterialStateProperty.all<EdgeInsetsGeometry>(
+                      EdgeInsets.symmetric(
+                          horizontal: width * 0.10,
+                          vertical: height * 0.020),
+                    ),
+                    backgroundColor: copied ? MaterialStateProperty.all<Color>(Colors.transparent) : MaterialStateProperty.all<Color>(kPurpleAccent.withOpacity(0.5)),
+                    
+                    shape: MaterialStateProperty.all<
+                        RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                    ),
+                  ),
+                )
           ],
         ),
       ),
@@ -203,7 +257,7 @@ class NotificationBadge extends StatelessWidget {
       width: 40.0,
       height: 40.0,
       decoration: new BoxDecoration(
-        color: Colors.red,
+        color: kPurple,
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -211,7 +265,7 @@ class NotificationBadge extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: Text(
             '$totalNotifications',
-            style: TextStyle(color: Colors.white, fontSize: 20),
+            style: TextStyle(color: Colors.white, fontSize: 20, fontFamily: 'Poppins'),
           ),
         ),
       ),
